@@ -1,59 +1,76 @@
+import tkinter as tk
+from PIL import ImageTk, Image
+import io
+
 import requests
-import json
-from cocktail import Cocktail
+import responses
 
-base_url = "https://www.thecocktaildb.com/api/json/v1/1/"
+def clear_previous_result():
+    for widget in root.winfo_children():
+        if isinstance(widget, tk.Label) and widget != label:
+            widget.destroy()
 
-def responseToFile(data):
-    try:
-        with open('cocktail_data.json', 'w') as file:
-            json.dump(data, file, indent=4)
-        
-        print("Data saved to cocktail_data.json")
+def display_cocktail_details(cocktail):
+    detail_window = tk.Toplevel(root)
+    detail_window.title(cocktail.name)
 
-    except requests.RequestException as e:
-        print(f"An error occurred: {e}")
+    response = requests.get(cocktail.image)
+    image_data = io.BytesIO(response.content)
+    image = Image.open(image_data)
+    resized_image = image.resize((300,205))
+    photo = ImageTk.PhotoImage(resized_image)
+    image_label = tk.Label(detail_window, image=photo)
+    image_label.image = photo
+    image_label.pack(pady=10)
 
-def randomCocktail():
-    # Fetch a random cocktail
-    response = requests.get(base_url + "random.php")
-    data = response.json()
+    name_label = tk.Label(detail_window, text=cocktail.name, font=("Arial", 16))
+    name_label.pack(pady=10)
 
-    responseToFile(data)
+    alcoholic_label = tk.Label(detail_window, text=f"{cocktail.isAlcoholic}")
+    alcoholic_label.pack(pady=5)
 
-    cocktail = data['drinks'][0]
+    ingredients_label = tk.Label(detail_window, text="Ingredients:")
+    ingredients_label.pack(pady=5)
 
-    #print(cocktail['strDrink'])
+    for ingredient, measure in cocktail.ingredients:
+        ing_label = tk.Label(detail_window, text=f"{ingredient} - {measure}")
+        ing_label.pack()
 
-    return cocktail
+    instructions_label = tk.Label(detail_window, text=f"Instructions: {cocktail.instructions}")
+    instructions_label.pack(pady=10)
 
-def searchByName():
-    cocktail_name = "Margarita"
-    response = requests.get(base_url + f"search.php?s={cocktail_name}")
-    data = response.json()
+def on_label_click(event, cocktail):
+    display_cocktail_details(cocktail)
 
-    responseToFile(data)
+def on_search_click():
+    clear_previous_result()
+    cocktails = responses.searchByName(entry.get())
+    
+    if not cocktails:
+        error_label = tk.Label(root, text="No cocktails found.")
+        error_label.pack()
+        return
+    for cocktail in cocktails:
+        cocktail_label = tk.Label(root, text=f"{cocktail.name}", cursor="hand2", foreground="blue")
+        cocktail_label.bind("<Button-1>", lambda event, c=cocktail: on_label_click(event, c))
+        cocktail_label.pack()
 
-    for drink in data['drinks']:
-        print(drink['strDrink'])
+### Create the main window ###
+root = tk.Tk()
+root.title("Cocktail Getter")
+root.geometry("1000x500")
 
-def createCocktail(cocktailData):
-    ingredients = []
-    measures = []
+# Create a label widget
+label = tk.Label(root, text="Search cocktail:")
+label.pack()
 
-    for i in range(1, 16):
-        ingredient = cocktailData[f'strIngredient{i}']
-        measeure = cocktailData[f'strMeasure{i}']
+# Create an entry widget (text input)
+entry = tk.Entry(root)
+entry.pack()
 
-        if ingredient:
-            ingAndMea = []
-            ingAndMea.append(ingredient)
-            ingAndMea.append(measeure)
+# Create a button widget
+button = tk.Button(root, text="Search", command=on_search_click)
+button.pack()
 
-            ingredients.append(ingAndMea)
-
-    cocktail = Cocktail(cocktailData['strDrink'], cocktailData['strAlcoholic'], cocktailData['strInstructions'], ingredients)
-    cocktail.display()
-
-
-createCocktail(randomCocktail())
+# Start the Tkinter event loop
+root.mainloop()
