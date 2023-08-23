@@ -13,6 +13,8 @@ def clear_previous_result():
 def display_cocktail_details(cocktail):
     detail_window = tk.Toplevel(root)
     detail_window.title(cocktail.name)
+    detail_window.minsize(400, 100)
+    detail_window.maxsize(400, 1000)
 
     response = requests.get(cocktail.image)
     image_data = io.BytesIO(response.content)
@@ -36,7 +38,7 @@ def display_cocktail_details(cocktail):
         ing_label = tk.Label(detail_window, text=f"{ingredient} - {measure}")
         ing_label.pack()
 
-    instructions_label = tk.Label(detail_window, text=f"Instructions: {cocktail.instructions}")
+    instructions_label = tk.Label(detail_window, text=f"Instructions: {cocktail.instructions}", wraplength=400-20)
     instructions_label.pack(pady=10)
 
 def on_label_click(event, cocktail):
@@ -58,7 +60,7 @@ def on_search_click():
 ### Create the main window ###
 root = tk.Tk()
 root.title("Cocktail Getter")
-root.geometry("1000x500")
+root.geometry("200x500")
 
 # Create a label widget
 label = tk.Label(root, text="Search cocktail:")
